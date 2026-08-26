@@ -1,19 +1,19 @@
 .PHONY: install test lint format run help
 
-PYTEST = poetry run pytest
-RUFF = poetry run ruff
-UVICORN = poetry run uvicorn
+PYTEST := poetry -C backend run pytest
+UVICORN := poetry -C backend run uvicorn
+RUFF := poetry -C backend run ruff
 
 install:
-	poetry install
+	poetry -C backend install
 test:
-	poetry run pytest
+	$(PYTEST)
 lint:
-	poetry run ruff check .
+	$(RUFF) check .
 format:
-	poetry run ruff format .
+	$(RUFF) format .
 run:
-	poetry run uvicorn app.main:app --reload
+	$(UVICORN) app.main:app --reload
 help:
 	echo "Usage: make <target>"
 	echo "Targets:"
