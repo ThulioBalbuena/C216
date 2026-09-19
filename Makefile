@@ -6,7 +6,7 @@ RUFF := poetry -C backend run ruff
 COMPOSE := docker compose
 
 install:
-	poetry -C backend install
+	poetry -C backend install --no-root
 test:
 	$(PYTEST)
 lint:
