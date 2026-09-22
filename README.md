@@ -40,6 +40,11 @@ Os serviços não publicam portas no host. Eles se comunicam pela rede interna n
 ## Comandos úteis
 
 ```bash
+make install       # instala as dependências do backend
+make test          # executa os testes automatizados
+make lint          # verifica erros no código
+make format        # formata o código
+make run           # inicia a API localmente
 make docker-build  # constrói a imagem do backend
 make up            # inicia todos os serviços
 make down          # encerra os serviços
@@ -49,6 +54,19 @@ make ps            # mostra o estado dos serviços
 make shell         # abre um shell no backend
 make clean         # remove containers, rede e volume do banco
 ```
+
+Os testes também são executados automaticamente pelo GitHub Actions a cada `push` e `pull request`.
+
+## Executando os testes
+
+Instale as dependências de desenvolvimento e execute a suíte a partir da raiz do projeto:
+
+```bash
+make install
+make test
+```
+
+O comando executa o Pytest dentro do ambiente Poetry do `backend`.
 
 Para remover os serviços diretamente com o Docker Compose:
 
