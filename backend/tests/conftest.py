@@ -1,9 +1,10 @@
 from collections.abc import Iterator
 
 import pytest
+from fastapi.testclient import TestClient
+
 from app.main import create_app
 from app.services.items import ItemService
-from fastapi.testclient import TestClient
 
 
 @pytest.fixture
