@@ -3,6 +3,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      target: runtime
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD:-app}@db:5432/${POSTGRES_DB:-app}
     depends_on:
@@ -28,6 +29,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      target: runtime
     command: ["python", "-m", "app.worker"]
     environment:
       API_URL: http://backend:8000
@@ -37,6 +39,13 @@ services:
     networks:
       - app_network
     restart: unless-stopped
+
+  tests:
+    profiles: ["test"]
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: test
 
   db:
     image: postgres:16-alpine

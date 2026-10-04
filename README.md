@@ -12,7 +12,94 @@ Projeto desenvolvido para a materia de C216
 ├── Makefile
 └── README.md
 ```
-## Requisitos
+## Backend — Prática 4
+
+O backend utiliza FastAPI e está organizado por responsabilidade:
+
+```text
+backend/
+├── app/
+│   ├── main.py             # inicialização e configuração da aplicação
+│   ├── api/
+│   │   ├── handlers.py     # conversão dos erros de domínio em respostas HTTP
+│   │   └── routes/         # endpoints de health e items
+│   ├── schemas/            # modelos Pydantic de entrada e resposta
+│   └── services/           # regras e armazenamento dos itens
+└── tests/
+    ├── unit/               # testes diretos do service
+    └── integration/        # endpoints via TestClient e testes anteriores
+```
+
+Cada item contém `id` (gerado pelo servidor), `name` (1 a 100 caracteres),
+`price` (número finito não negativo) e `description` (opcional, até 1000 caracteres).
+Os modelos `ItemCreate`, `ItemUpdate` e `ItemResponse` validam esses dados.
+
+| Método | Rota | Comportamento |
+| --- | --- | --- |
+| GET | `/health` | Verifica a disponibilidade da API |
+| GET | `/items` | Lista itens, com filtro `q` por nome e paginação `skip`/`limit` |
+| GET | `/items/{item_id}` | Consulta um item |
+| POST | `/items` | Cria um item e retorna 201 |
+| PUT | `/items/{item_id}` | Substitui o item completo |
+| PATCH | `/items/{item_id}` | Atualiza somente os campos informados |
+| DELETE | `/items/{item_id}` | Remove o item e retorna 204 sem corpo |
+
+O Path Parameter `item_id` deve ser um inteiro positivo. Os Query Parameters
+`skip` e `limit` têm valores padrão 0 e 20; `skip` deve ser não negativo e
+`limit` deve estar entre 1 e 100. O filtro `q` procura parte do nome sem diferenciar
+maiúsculas e minúsculas, antes da paginação.
+
+PUT exige `name` e `price` e remove a descrição quando ela é omitida. PATCH
+preserva os campos omitidos e permite `description: null` para limpar a descrição;
+`name` e `price` não aceitam nulo. Itens inexistentes retornam 404 e entradas
+inválidas retornam 422.
+
+Os itens são mantidos em memória por instância da aplicação e são perdidos ao
+reiniciar o processo. Esse recurso não utiliza o PostgreSQL do Compose; processos
+distintos não compartilham seus itens.
+
+Para executar localmente, instale Python 3.12 ou superior e Poetry 2.4.1:
+
+```bash
+make install
+make run
+```
+
+A documentação interativa fica em `http://127.0.0.1:8000/docs`. Exemplo de criação:
+
+```bash
+curl -X POST http://127.0.0.1:8000/items \
+  -H 'Content-Type: application/json' \
+  -d '{"name": "Caderno", "price": 12.50, "description": "Capa azul"}'
+curl 'http://127.0.0.1:8000/items?q=caderno&skip=0&limit=10'
+```
+
+Execute toda a suíte ou cada grupo separadamente:
+
+```bash
+make test
+poetry -C backend run pytest tests/unit
+poetry -C backend run pytest tests/integration
+```
+
+O workflow `.github/workflows/ci-backend.yml` executa Ruff e toda a suíte do Pytest
+em pushes e pull requests, incluindo os dois grupos e os testes das práticas
+anteriores. O relatório JUnit fica disponível como artefato da execução.
+Um job adicional valida o Compose, executa os testes em Docker e constrói as
+imagens de execução do backend e do worker.
+
+O Dockerfile possui os estágios `base`, `test` e `runtime`. O estágio `test`
+inclui as dependências de desenvolvimento e os testes; o `runtime` contém
+somente as dependências da aplicação e o pacote `app`, com os novos módulos.
+Para executar toda a suíte em container, sem iniciar o banco ou o worker:
+
+```bash
+make docker-test
+# equivalente:
+docker compose --profile test run --build --rm tests
+```
+
+## Requisitos do ambiente Docker
 
 - Docker com Docker Compose
 - Make 
@@ -73,4 +160,3 @@ Para remover os serviços diretamente com o Docker Compose:
 ```bash
 docker compose down
 ```
-

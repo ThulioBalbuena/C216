@@ -23,5 +23,32 @@ jobs:
       - name: Install dependencies
         run: poetry -C backend install --no-root
 
-      - name: Run tests
-        run: poetry -C backend run pytest
+      - name: Lint backend
+        run: poetry -C backend run ruff check .
+
+      - name: Run all tests (unit, integration and previous practices)
+        run: poetry -C backend run pytest tests -v --junitxml=test-results/pytest.xml
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-results
+          path: backend/test-results/pytest.xml
+          if-no-files-found: ignore
+
+  docker:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate Compose configuration
+        run: docker compose --profile test config --quiet
+
+      - name: Run all tests in Docker
+        run: docker compose --profile test run --build --rm tests
+
+      - name: Build backend and worker runtime images
+        run: docker compose build backend worker

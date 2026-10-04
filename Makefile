@@ -1,4 +1,4 @@
-.PHONY: install test lint format run docker-build up down restart logs ps shell clean help
+.PHONY: install test lint format run docker-build docker-test up down restart logs ps shell clean help
 
 PYTEST := poetry -C backend run pytest
 UVICORN := poetry -C backend run uvicorn
@@ -17,6 +17,8 @@ run:
 	$(UVICORN) app.main:app --reload
 docker-build:
 	$(COMPOSE) build backend
+docker-test:
+	$(COMPOSE) --profile test run --build --rm tests
 up:
 	$(COMPOSE) up -d --build
 down:
@@ -40,6 +42,7 @@ help:
 	echo "  format - formata codigo"
 	echo "  run - inicia servidor"
 	echo "  docker-build - constroi a imagem do backend"
+	echo "  docker-test - executa testes unitarios e de integracao em container"
 	echo "  up - constroi e inicia os servicos em segundo plano"
 	echo "  down - para e remove os containers"
 	echo "  restart - reinicia os servicos"
