@@ -31,9 +31,7 @@ def test_unknown_route_returns_not_found(client: TestClient) -> None:
 
 
 @pytest.mark.parametrize("method", ["post", "delete"])
-def test_health_rejects_unsupported_methods(
-    client: TestClient, method: str
-) -> None:
+def test_health_rejects_unsupported_methods(client: TestClient, method: str) -> None:
     response = client.request(method, "/health")
 
     assert response.status_code == 405
