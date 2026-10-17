@@ -12,7 +12,7 @@ Projeto desenvolvido para a materia de C216
 ├── Makefile
 └── README.md
 ```
-## Backend — Prática 4
+## Backend — Prática 5
 
 O backend utiliza FastAPI e está organizado por responsabilidade:
 
@@ -24,7 +24,10 @@ backend/
 │   │   ├── handlers.py     # conversão dos erros de domínio em respostas HTTP
 │   │   └── routes/         # endpoints de health e items
 │   ├── schemas/            # modelos Pydantic de entrada e resposta
-│   └── services/           # regras e armazenamento dos itens
+│   ├── services/           # regras dos itens
+│   ├── repositories/       # acesso ao banco
+│   ├── models/             # modelos ORM SQLAlchemy
+│   └── database/           # Base, conexão e sessões
 └── tests/
     ├── unit/               # testes diretos do service
     └── integration/        # endpoints via TestClient e testes anteriores
@@ -54,15 +57,30 @@ preserva os campos omitidos e permite `description: null` para limpar a descriç
 `name` e `price` não aceitam nulo. Itens inexistentes retornam 404 e entradas
 inválidas retornam 422.
 
-Os itens são mantidos em memória por instância da aplicação e são perdidos ao
-reiniciar o processo. Esse recurso não utiliza o PostgreSQL do Compose; processos
-distintos não compartilham seus itens.
+Os itens são persistidos no PostgreSQL e permanecem após reiniciar a API.
+Os schemas Pydantic são separados dos modelos ORM; o service usa o repository
+para acessar o banco.
 
 Para executar localmente, instale Python 3.12 ou superior e Poetry 2.4.1:
 
 ```bash
 make install
+docker compose -f compose.yaml -f compose.local.yaml up -d db
+export DATABASE_URL='postgresql+psycopg://app:app@localhost:5432/app'
+make db-upgrade
 make run
+```
+
+Aguarde o banco ficar saudável antes de executar `make db-upgrade`. A conexão usa
+`DATABASE_URL`, com a URL acima como padrão local. Se mudar as credenciais no
+Compose, ajuste também a URL. No Mac, use `localhost`; nos containers, use `db`.
+
+A migration inicial está em `backend/alembic/versions/`. Para alterações futuras:
+
+```bash
+make db-migration msg="descricao da alteracao"
+make db-upgrade
+make db-current
 ```
 
 A documentação interativa fica em `http://127.0.0.1:8000/docs`. Exemplo de criação:
@@ -90,7 +108,8 @@ imagens de execução do backend e do worker.
 
 O Dockerfile possui os estágios `base`, `test` e `runtime`. O estágio `test`
 inclui as dependências de desenvolvimento e os testes; o `runtime` contém
-somente as dependências da aplicação e o pacote `app`, com os novos módulos.
+somente as dependências da aplicação, o pacote `app` e as migrations.
+O backend aplica as migrations antes de iniciar no Docker.
 Para executar toda a suíte em container, sem iniciar o banco ou o worker:
 
 ```bash
@@ -118,7 +137,9 @@ Comandos equivalentes sem Make:
 docker compose up -d --build
 ```
 
-Os serviços não publicam portas no host. Eles se comunicam pela rede interna nomeada `c216_network`:
+O Compose principal não publica portas no host. O arquivo `compose.local.yaml`
+publica o PostgreSQL em `127.0.0.1:5432` para uso local. Os serviços se comunicam
+pela rede interna nomeada `c216_network`:
 
 - O backend acessa o PostgreSQL pelo endereço `db:5432`, configurado em `DATABASE_URL`.
 - O worker consulta periodicamente o endpoint `http://backend:8000/health`.
@@ -153,7 +174,9 @@ make install
 make test
 ```
 
-O comando executa o Pytest dentro do ambiente Poetry do `backend`.
+O comando executa o Pytest dentro do ambiente Poetry do `backend`. Os testes
+usam SQLite temporário para não alterar o banco da aplicação; incluem CRUD e
+persistência entre instâncias da API.
 
 Para remover os serviços diretamente com o Docker Compose:
 

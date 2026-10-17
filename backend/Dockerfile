@@ -13,6 +13,8 @@ COPY pyproject.toml poetry.lock ./
 RUN poetry install --only main --no-root
 
 COPY app ./app
+COPY alembic.ini ./
+COPY alembic ./alembic
 
 FROM base AS test
 
@@ -28,4 +30,4 @@ RUN useradd --create-home --uid 10001 appuser \
 
 USER appuser
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "-c", "alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port 8000"]

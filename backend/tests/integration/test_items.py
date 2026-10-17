@@ -1,5 +1,6 @@
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import Engine
 
 
 def test_complete_item_lifecycle(client: TestClient) -> None:
@@ -119,9 +120,18 @@ def test_invalid_patch_does_not_change_item(client: TestClient, payload: dict) -
     assert client.get(path).json() == original
 
 
-def test_app_instances_have_independent_storage(client: TestClient) -> None:
+def test_items_persist_across_app_instances(
+    client: TestClient, db_engine: Engine
+) -> None:
+    from app.database.session import get_session
     from app.main import create_app
 
-    client.post("/items", json={"name": "Caderno", "price": 10})
-    with TestClient(create_app()) as other_client:
-        assert other_client.get("/items").json() == []
+    item = client.post("/items", json={"name": "Caderno", "price": 10}).json()
+    db_engine.dispose()
+    restarted_app = create_app()
+    restarted_app.dependency_overrides[get_session] = client.app.dependency_overrides[
+        get_session
+    ]
+    with TestClient(restarted_app) as other_client:
+        assert other_client.get(f"/items/{item['id']}").json() == item
+        assert other_client.get("/items").json() == [item]
