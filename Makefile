@@ -1,8 +1,9 @@
-.PHONY: install test lint format run docker-build docker-test up down restart logs ps shell clean help
+.PHONY: install test lint format run db-upgrade db-migration db-current docker-build docker-test up down restart logs ps shell clean help
 
 PYTEST := poetry -C backend run pytest
 UVICORN := poetry -C backend run uvicorn
 RUFF := poetry -C backend run ruff
+ALEMBIC := poetry -C backend run alembic
 COMPOSE := docker compose
 
 install:
@@ -15,6 +16,12 @@ format:
 	$(RUFF) format .
 run:
 	$(UVICORN) app.main:app --reload
+db-upgrade:
+	$(ALEMBIC) upgrade head
+db-migration:
+	$(ALEMBIC) revision --autogenerate -m "$(msg)"
+db-current:
+	$(ALEMBIC) current
 docker-build:
 	$(COMPOSE) build backend
 docker-test:
@@ -41,6 +48,9 @@ help:
 	echo "  lint - verifica erros de codigo"
 	echo "  format - formata codigo"
 	echo "  run - inicia servidor"
+	echo "  db-upgrade - aplica as migrations pendentes"
+	echo '  db-migration - gera migration: make db-migration msg="descricao"'
+	echo "  db-current - mostra a revisao atual do banco"
 	echo "  docker-build - constroi a imagem do backend"
 	echo "  docker-test - executa testes unitarios e de integracao em container"
 	echo "  up - constroi e inicia os servicos em segundo plano"

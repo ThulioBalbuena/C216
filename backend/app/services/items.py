@@ -1,5 +1,5 @@
-from threading import Lock
-
+from app.models.item import Item
+from app.repositories.item import ItemRepository
 from app.schemas.item import ItemCreate, ItemResponse, ItemUpdate
 
 
@@ -8,58 +8,39 @@ class ItemNotFoundError(Exception):
 
 
 class ItemService:
-    """Armazena itens em memória durante a execução do processo."""
-
-    def __init__(self) -> None:
-        self._items: dict[int, ItemResponse] = {}
-        self._next_id = 1
-        self._lock = Lock()
+    def __init__(self, repository: ItemRepository) -> None:
+        self.repository = repository
 
     def list_items(
         self, skip: int = 0, limit: int = 20, q: str | None = None
     ) -> list[ItemResponse]:
-        with self._lock:
-            items = self._items.values()
-            matches = [
-                item.model_copy()
-                for item in items
-                if q is None or q.casefold() in item.name.casefold()
-            ]
-            return matches[skip : skip + limit]
+        return [
+            ItemResponse.model_validate(item)
+            for item in self.repository.get_all(skip=skip, limit=limit, q=q)
+        ]
 
     def get_item(self, item_id: int) -> ItemResponse:
-        with self._lock:
-            return self._get_item(item_id).model_copy()
+        return ItemResponse.model_validate(self._get_item(item_id))
 
-    def _get_item(self, item_id: int) -> ItemResponse:
-        if item_id not in self._items:
+    def _get_item(self, item_id: int) -> Item:
+        item = self.repository.get_by_id(item_id)
+        if item is None:
             raise ItemNotFoundError(item_id)
-        return self._items[item_id]
+        return item
 
     def create_item(self, data: ItemCreate) -> ItemResponse:
-        with self._lock:
-            item = ItemResponse(id=self._next_id, **data.model_dump())
-            self._items[item.id] = item
-            self._next_id += 1
-            return item.model_copy()
+        item = self.repository.create(**data.model_dump())
+        return ItemResponse.model_validate(item)
 
     def replace_item(self, item_id: int, data: ItemCreate) -> ItemResponse:
-        with self._lock:
-            self._get_item(item_id)
-            item = ItemResponse(id=item_id, **data.model_dump())
-            self._items[item_id] = item
-            return item.model_copy()
+        item = self.repository.update(self._get_item(item_id), data.model_dump())
+        return ItemResponse.model_validate(item)
 
     def update_item(self, item_id: int, data: ItemUpdate) -> ItemResponse:
-        with self._lock:
-            current = self._get_item(item_id)
-            item = ItemResponse.model_validate(
-                current.model_dump() | data.model_dump(exclude_unset=True)
-            )
-            self._items[item_id] = item
-            return item.model_copy()
+        item = self.repository.update(
+            self._get_item(item_id), data.model_dump(exclude_unset=True)
+        )
+        return ItemResponse.model_validate(item)
 
     def delete_item(self, item_id: int) -> None:
-        with self._lock:
-            self._get_item(item_id)
-            del self._items[item_id]
+        self.repository.delete(self._get_item(item_id))
