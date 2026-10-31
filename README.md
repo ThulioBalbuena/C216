@@ -7,7 +7,7 @@ Projeto desenvolvido para a materia de C216
 ```text
 .
 ├── backend/
-├── frontend/           # reservada para a interface futura
+├── frontend/           # interface React (Prática 6)
 ├── compose.yaml
 ├── Makefile
 └── README.md
@@ -118,6 +118,128 @@ make docker-test
 docker compose --profile test run --build --rm tests
 ```
 
+## Frontend — Prática 6
+
+O frontend é um gerenciador de itens (nome e descrição) em React. O estado fica
+apenas na memória do navegador (`useState`): **sem integração com o backend, sem
+persistência e sem Docker nesta prática**. A integração fica para a Prática 7.
+
+| Ferramenta | Para que serve |
+| --- | --- |
+| React + react-dom | Interface em componentes (JavaScript puro, sem TypeScript) |
+| Vite + `@vitejs/plugin-react` | Servidor de desenvolvimento e build |
+| Tailwind CSS v4 (`@tailwindcss/vite`) | Estilo com classes utilitárias, sem `tailwind.config.js` e sem PostCSS |
+| Biome | Lint, formatação e organização de imports (no lugar de ESLint e Prettier) |
+| Vitest + jsdom + Testing Library | Testes unitários e de integração |
+| Playwright | Testes E2E no navegador (Chromium) |
+
+### Pré-requisitos
+
+- Node.js 22 ou superior, npm e Git
+
+```bash
+node --version
+npm --version
+git --version
+```
+
+### Estrutura
+
+```text
+frontend/
+├── src/
+│   ├── main.jsx            # ponto de entrada
+│   ├── App.jsx             # estado dos itens e layout da página
+│   ├── index.css           # apenas @import "tailwindcss";
+│   ├── validate.js         # regras de validação (funções puras)
+│   └── components/         # ItemForm, ItemList e ItemCard
+├── tests/
+│   ├── unit/               # validação e componentes isolados
+│   ├── integration/        # formulário + lista juntos
+│   └── e2e/                # fluxo completo no navegador (Playwright)
+├── biome.json
+├── vite.config.js          # plugins e configuração do Vitest
+└── playwright.config.js
+```
+
+Cada item tem `name` (obrigatório, até 100 caracteres) e `description` (opcional,
+até 1000 caracteres), as mesmas regras do backend. Espaços nas pontas são ignorados.
+
+### Instalando e executando
+
+```bash
+make front-install
+make front-dev
+```
+
+A aplicação abre em `http://localhost:5173`. Para os testes E2E, instale o
+Chromium do Playwright uma única vez:
+
+```bash
+cd frontend
+npx playwright install chromium
+```
+
+### Scripts npm e targets make
+
+Os scripts do npm (dentro de `frontend/`) não substituem o Makefile, que continua
+sendo a camada principal a partir da raiz.
+
+| Script npm | Target make | O que faz |
+| --- | --- | --- |
+| `npm ci` | `make front-install` | Instala as dependências do `package-lock.json` |
+| `npm run dev` | `make front-dev` | Inicia o servidor de desenvolvimento |
+| `npm run build` | `make front-build` | Gera o build em `dist/` |
+| `npm run preview` | `make front-preview` | Serve o build gerado |
+| `npm run lint` | `make front-lint` | Verifica erros de código (Biome) |
+| `npm run format` | `make front-format` | Formata o código |
+| `npm run format:check` | `make front-format-check` | Verifica a formatação sem alterar arquivos |
+| `npm run check` | `make front-check` | Lint, formatação e imports de uma vez |
+| `npm run test` | `make front-test` | Testes unitários e de integração (Vitest) |
+| `npm run test:e2e` | `make front-test-e2e` | Testes E2E (Playwright) |
+
+### Testes
+
+Há três níveis de teste:
+
+- **Unitários** (`tests/unit/`): funções de validação e componentes isolados.
+- **Integração** (`tests/integration/`): formulário e lista funcionando juntos, com
+  `user-event` digitando e clicando.
+- **E2E** (`tests/e2e/`): o fluxo completo no Chromium (cadastrar item, validar campo
+  vazio e ver o item na lista), incluindo uma tela de celular.
+
+```bash
+make front-test        # unitários e integração
+make front-test-e2e    # E2E (o Playwright sobe o Vite sozinho)
+```
+
+O Vitest executa apenas `tests/unit` e `tests/integration`; os testes E2E ficam
+fora dele e rodam só pelo Playwright.
+
+### CI
+
+O workflow `.github/workflows/ci-frontend.yml` roda em pushes e pull requests. O job
+`lint` executa o Biome. O job `test`, que depende do `lint`, verifica a formatação,
+roda os testes do Vitest, faz o build, instala o Chromium e roda o E2E. Se algo
+falhar, o relatório do Playwright fica disponível como artefato da execução.
+
+### Checklist de entrega
+
+A partir da raiz, rode `make check-all` (backend e frontend) ou, só no frontend:
+
+```bash
+cd frontend
+npm ci
+npm run lint
+npm run format:check
+npm run test
+npm run build
+npm run test:e2e
+```
+
+Rode `make front-format` antes de commitar. As evidências vão no pull request com as
+labels `Frontend`, `Test` e `Prática 6`.
+
 ## Requisitos do ambiente Docker
 
 - Docker com Docker Compose
@@ -161,6 +283,12 @@ make logs          # acompanha os logs do backend
 make ps            # mostra o estado dos serviços
 make shell         # abre um shell no backend
 make clean         # remove containers, rede e volume do banco
+make front-install # instala as dependências do frontend
+make front-dev     # inicia o frontend em http://localhost:5173
+make front-check   # lint, formatação e imports do frontend
+make front-test    # testes unitários e de integração do frontend
+make front-test-e2e # testes E2E do frontend
+make check-all     # checklist de entrega (backend e frontend)
 ```
 
 Os testes também são executados automaticamente pelo GitHub Actions a cada `push` e `pull request`.
