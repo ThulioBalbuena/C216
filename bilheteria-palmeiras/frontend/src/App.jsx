@@ -1,35 +1,35 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useEffect, useState } from "react";
 
-function App() {
-  const [count, setCount] = useState(0)
+export default function App() {
+  const [status, setStatus] = useState("Verificando conexão com a API…");
+
+  useEffect(() => {
+    const controller = new AbortController();
+    async function checkConnection() {
+      try {
+        const response = await fetch("/api/health", {
+          signal: controller.signal,
+        });
+        if (!response.ok || (await response.json()).status !== "ok") {
+          throw new Error("API indisponível.");
+        }
+        if (!controller.signal.aborted) {
+          setStatus("API e banco de dados conectados.");
+        }
+      } catch {
+        if (!controller.signal.aborted) {
+          setStatus("Conexão com a API indisponível.");
+        }
+      }
+    }
+    checkConnection();
+    return () => controller.abort();
+  }, []);
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <main>
+      <h1>Bilheteria Palmeiras</h1>
+      <p role="status">{status}</p>
+    </main>
+  );
 }
-
-export default App

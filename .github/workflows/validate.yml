@@ -1,0 +1,28 @@
+name: Validate Bilheteria Palmeiras
+
+on:
+  push:
+    branches: [projeto-final]
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: bilheteria-palmeiras
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: bilheteria-palmeiras/frontend/package-lock.json
+      - run: make install-frontend
+      - run: make up
+      - run: make lint
+      - if: failure()
+        run: docker compose logs --no-color
+      - if: always()
+        run: make down
