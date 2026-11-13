@@ -9,6 +9,8 @@ cp .env.example .env
 make up
 ```
 
+Abra <http://localhost:8081>, escolha uma partida e selecione um setor no mapa ou na lista para consultar o preço total.
+
 `WEB_PORT` altera a porta da interface. `POSTGRES_USER`, `POSTGRES_PASSWORD` e `POSTGRES_DB` configuram o banco. Use o `.env` local para esses valores.
 
 Na inicialização, a API aplica as migrações do Alembic. O catálogo inclui três partidas de demonstração, com preços e vagas fictícios. A rota `GET /api/matches` lista as partidas e `GET /api/matches/{match_id}` retorna os setores de uma partida.
@@ -18,6 +20,7 @@ Na inicialização, a API aplica as migrações do Alembic. O catálogo inclui t
 ```sh
 make install-frontend
 make lint
+make test-frontend
 ```
 
 `make up` aguarda as verificações de saúde do Docker Compose antes de retornar. A instalação local do frontend e a verificação com Biome usam Node.js 22. O Ruff roda dentro do contêiner da API.

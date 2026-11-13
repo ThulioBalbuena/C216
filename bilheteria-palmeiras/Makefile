@@ -1,4 +1,4 @@
-.PHONY: up down logs migrate install-frontend lint
+.PHONY: up down logs migrate install-frontend lint test-frontend
 
 up:
 	docker compose up -d --build --wait
@@ -19,3 +19,6 @@ lint:
 	docker compose exec -T backend ruff check .
 	docker compose exec -T backend ruff format --check .
 	npm --prefix frontend run lint
+
+test-frontend:
+	npm --prefix frontend test

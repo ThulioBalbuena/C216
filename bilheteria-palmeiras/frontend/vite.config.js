@@ -9,4 +9,5 @@ export default defineConfig({
   plugins: [react()],
   server: { proxy },
   preview: { proxy },
+  test: { environment: "jsdom", include: ["src/**/*.test.jsx"] },
 });

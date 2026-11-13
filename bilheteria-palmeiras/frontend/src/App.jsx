@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "./api";
-import { matchDate, matchTime, money } from "./format";
+import { matchDate, matchDay, matchTime } from "./format";
+import { SectorSelection } from "./SectorSelection";
 
 const crests = {
   PAL: "/media/palmeiras.png",
@@ -175,27 +176,22 @@ function MatchPage({ id }) {
       <a className="back" href="#/">
         ← Voltar aos jogos
       </a>
-      <h1 className="page-title">Palmeiras × {match.opponent}</h1>
-      <p className="match-venue">{match.venue}</p>
-      <h2 className="sector-heading">Setores</h2>
-      {match.sectors.length ? (
-        <ul className="sector-list">
-          {match.sectors.map((sector) => (
-            <li key={sector.id}>
-              <h3>{sector.name}</h3>
-              <p>{sector.description}</p>
-              <p>
-                {money(sector.price_cents)} ·{" "}
-                {sector.remaining
-                  ? `${sector.remaining} disponíveis`
-                  : "Esgotado"}
-              </p>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p>Nenhum setor disponível.</p>
-      )}
+      <div className="match-banner">
+        <div>
+          <span className="eyebrow">{match.competition}</span>
+          <h1 className="page-title">Palmeiras × {match.opponent}</h1>
+          <p className="match-facts">
+            {matchDay(match.starts_at)} · {matchTime(match.starts_at)} ·{" "}
+            {match.venue}
+          </p>
+        </div>
+        <div className="crests" aria-hidden="true">
+          <Crest />
+          <span>×</span>
+          <Crest initials={match.opponent_initials} />
+        </div>
+      </div>
+      <SectorSelection sectors={match.sectors} />
     </>
   );
 }
