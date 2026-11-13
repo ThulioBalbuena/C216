@@ -27,6 +27,20 @@ const sectors = [
     remaining: 0,
     price_cents: 7500,
   },
+  {
+    id: 4,
+    name: "Superior Oeste",
+    description: "Vista panorâmica",
+    remaining: 10,
+    price_cents: 9500,
+  },
+  {
+    id: 5,
+    name: "Superior Leste",
+    description: "Vista panorâmica",
+    remaining: 10,
+    price_cents: 9500,
+  },
 ];
 
 test("bloqueia setor esgotado e sincroniza a seleção do mapa com a lista", async () => {
@@ -43,15 +57,15 @@ test("bloqueia setor esgotado e sincroniza a seleção do mapa com a lista", asy
     true,
   );
 
-  const northOnMap = screen.getByRole("button", {
-    name: "Gol Norte",
+  const upperEastOnMap = screen.getByRole("button", {
+    name: "Superior Leste",
     exact: true,
   });
-  await user.click(northOnMap);
-  expect(northOnMap.getAttribute("aria-pressed")).toBe("true");
+  await user.click(upperEastOnMap);
+  expect(upperEastOnMap.getAttribute("aria-pressed")).toBe("true");
   expect(
     list
-      .getByRole("button", { name: /Gol Norte/ })
+      .getByRole("button", { name: /Superior Leste/ })
       .getAttribute("aria-pressed"),
   ).toBe("true");
 });

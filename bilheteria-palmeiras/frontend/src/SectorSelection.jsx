@@ -1,6 +1,17 @@
 import { useState } from "react";
 import { money } from "./format";
 
+const stadiumAreas = new Map([
+  ["Gol Norte", "north"],
+  ["Gol Sul", "south"],
+  ["Central Oeste", "west"],
+  ["Central Leste", "east"],
+  ["Superior Norte", "upper-north"],
+  ["Superior Sul", "upper-south"],
+  ["Superior Oeste", "upper-west"],
+  ["Superior Leste", "upper-east"],
+]);
+
 function SectorPicker({ sectors, selected, quantity, onSelect, onQuantity }) {
   const sector = sectors.find((item) => item.id === selected);
   const limit = sector ? Math.min(4, sector.remaining) : 1;
@@ -70,18 +81,21 @@ function Stadium({ sectors, selected, onSelect }) {
         <small>Mapa ilustrativo</small>
       </div>
       <div className="stadium-layout">
-        {sectors.slice(0, 4).map((sector, index) => (
-          <button
-            key={sector.id}
-            type="button"
-            className={`stand stand-${index + 1}`}
-            aria-pressed={selected === sector.id}
-            disabled={!sector.remaining}
-            onClick={() => onSelect(sector)}
-          >
-            {sector.name}
-          </button>
-        ))}
+        {sectors
+          .filter((sector) => stadiumAreas.has(sector.name))
+          .map((sector) => (
+            <button
+              key={sector.id}
+              type="button"
+              className="stand"
+              style={{ gridArea: stadiumAreas.get(sector.name) }}
+              aria-pressed={selected === sector.id}
+              disabled={!sector.remaining}
+              onClick={() => onSelect(sector)}
+            >
+              {sector.name}
+            </button>
+          ))}
         <div className="pitch" aria-hidden="true">
           <div className="pitch-inner">
             <span />
