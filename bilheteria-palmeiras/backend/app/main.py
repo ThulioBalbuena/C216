@@ -6,6 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 
 from .database import engine
+from .routes import router
 
 app = FastAPI(title="Bilheteria Palmeiras", version="0.1.0")
 app.add_middleware(
@@ -14,6 +15,7 @@ app.add_middleware(
     allow_methods=["GET"],
     allow_headers=[],
 )
+app.include_router(router)
 
 
 @app.get("/api/health")

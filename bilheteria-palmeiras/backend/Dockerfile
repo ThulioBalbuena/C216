@@ -11,4 +11,6 @@ COPY pyproject.toml poetry.lock ./
 RUN poetry install --no-interaction --no-root
 
 COPY app ./app
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+COPY alembic.ini ./
+COPY alembic ./alembic
+CMD ["sh", "-c", "alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port 8000"]
