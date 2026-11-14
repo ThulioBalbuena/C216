@@ -67,11 +67,11 @@ Para executar localmente, instale Python 3.12 ou superior e Poetry 2.4.1:
 make install
 docker compose -f compose.yaml -f compose.local.yaml up -d db
 export DATABASE_URL='postgresql+psycopg://app:app@localhost:5432/app'
-make db-upgrade
+poetry -C backend run alembic upgrade head
 make run
 ```
 
-Aguarde o banco ficar saudável antes de executar `make db-upgrade`. A conexão usa
+Aguarde o banco ficar saudável antes de executar a migration. A conexão usa
 `DATABASE_URL`, com a URL acima como padrão local. Se mudar as credenciais no
 Compose, ajuste também a URL. No Mac, use `localhost`; nos containers, use `db`.
 
@@ -118,11 +118,11 @@ make docker-test
 docker compose --profile test run --build --rm tests
 ```
 
-## Frontend — Prática 6
+## Frontend — Prática 7
 
-O frontend é um gerenciador de itens (nome e descrição) em React. O estado fica
-apenas na memória do navegador (`useState`): **sem integração com o backend, sem
-persistência e sem Docker nesta prática**. A integração fica para a Prática 7.
+O frontend lista e cadastra itens por HTTP. A API grava no PostgreSQL; ao
+recarregar a página, a lista é buscada novamente. A interface mostra o
+carregamento e as mensagens de falha, incluindo a de nome repetido.
 
 | Ferramenta | Para que serve |
 | --- | --- |
@@ -152,7 +152,8 @@ frontend/
 │   ├── App.jsx             # estado dos itens e layout da página
 │   ├── index.css           # apenas @import "tailwindcss";
 │   ├── validate.js         # regras de validação (funções puras)
-│   └── components/         # ItemForm, ItemList e ItemCard
+│   ├── components/         # ItemForm, ItemList e ItemCard
+│   └── services/items.js  # chamadas HTTP de itens
 ├── tests/
 │   ├── unit/               # validação e componentes isolados
 │   ├── integration/        # formulário + lista juntos
@@ -162,22 +163,28 @@ frontend/
 └── playwright.config.js
 ```
 
-Cada item tem `name` (obrigatório, até 100 caracteres) e `description` (opcional,
-até 1000 caracteres), as mesmas regras do backend. Espaços nas pontas são ignorados.
+Cada item tem nome obrigatório, preço não negativo e descrição opcional.
+O banco não aceita nomes idênticos. Se um banco das práticas anteriores já
+tiver nomes duplicados, revise esses registros antes de aplicar a migration.
 
 ### Instalando e executando
 
 ```bash
-make front-install
-make front-dev
+make up-build
+make ps
+make db-upgrade
+make db-current
 ```
 
-A aplicação abre em `http://localhost:5173`. Para os testes E2E, instale o
+A interface abre em `http://localhost:5173` e o Swagger em
+`http://localhost:8000/docs`. O Compose usa `VITE_API_URL` para o endereço
+da API visto pelo navegador e `CORS_ORIGINS` (origens separadas por vírgula)
+para autorizar o frontend. Para os testes E2E, instale o
 Chromium do Playwright uma única vez:
 
 ```bash
-cd frontend
-npx playwright install chromium
+make front-install
+(cd frontend && npx playwright install chromium)
 ```
 
 ### Scripts npm e targets make
@@ -189,29 +196,32 @@ sendo a camada principal a partir da raiz.
 | --- | --- | --- |
 | `npm ci` | `make front-install` | Instala as dependências do `package-lock.json` |
 | `npm run dev` | `make front-dev` | Inicia o servidor de desenvolvimento |
-| `npm run build` | `make front-build` | Gera o build em `dist/` |
+| `npm run build` | `make frontend-build` | Gera o build em `dist/` |
 | `npm run preview` | `make front-preview` | Serve o build gerado |
 | `npm run lint` | `make front-lint` | Verifica erros de código (Biome) |
 | `npm run format` | `make front-format` | Formata o código |
 | `npm run format:check` | `make front-format-check` | Verifica a formatação sem alterar arquivos |
-| `npm run check` | `make front-check` | Lint, formatação e imports de uma vez |
-| `npm run test` | `make front-test` | Testes unitários e de integração (Vitest) |
-| `npm run test:e2e` | `make front-test-e2e` | Testes E2E (Playwright) |
+| `npm run check` | `make frontend-check` | Lint, formatação e imports de uma vez |
+| `npm run test` | `make frontend-test` | Testes unitários e de integração (Vitest) |
+| `npm run test:e2e` | `make e2e` | Testes E2E (Playwright) |
 
 ### Testes
 
 Há três níveis de teste:
 
 - **Unitários** (`tests/unit/`): funções de validação e componentes isolados.
-- **Integração** (`tests/integration/`): formulário e lista funcionando juntos, com
-  `user-event` digitando e clicando.
-- **E2E** (`tests/e2e/`): o fluxo completo no Chromium (cadastrar item, validar campo
-  vazio e ver o item na lista), incluindo uma tela de celular.
+- **Integração** (`tests/integration/`): simula `fetch` para verificar carregamento,
+  sucesso e mensagens de erro.
+- **E2E** (`tests/e2e/`): cadastra na API real, recarrega a página, verifica
+  duplicidade e confere o cabeçalho CORS da resposta.
 
 ```bash
-make front-test        # unitários e integração
-make front-test-e2e    # E2E (o Playwright sobe o Vite sozinho)
+make frontend-test
+make e2e
 ```
+
+O E2E usa uma stack Compose temporária com portas 15173 e 18000, e remove
+seus containers e volume ao terminar.
 
 O Vitest executa apenas `tests/unit` e `tests/integration`; os testes E2E ficam
 fora dele e rodam só pelo Playwright.
@@ -225,20 +235,13 @@ falhar, o relatório do Playwright fica disponível como artefato da execução.
 
 ### Checklist de entrega
 
-A partir da raiz, rode `make check-all` (backend e frontend) ou, só no frontend:
+A partir da raiz, com Docker em execução e dependências do backend instaladas:
 
 ```bash
-cd frontend
-npm ci
-npm run lint
-npm run format:check
-npm run test
-npm run build
-npm run test:e2e
+make check-all
 ```
 
-Rode `make front-format` antes de commitar. As evidências vão no pull request com as
-labels `Frontend`, `Test` e `Prática 6`.
+O comando roda lint e testes do backend, checagens e build do frontend, mais o E2E.
 
 ## Requisitos do ambiente Docker
 
@@ -259,13 +262,13 @@ Comandos equivalentes sem Make:
 docker compose up -d --build
 ```
 
-O Compose principal não publica portas no host. O arquivo `compose.local.yaml`
-publica o PostgreSQL em `127.0.0.1:5432` para uso local. Os serviços se comunicam
-pela rede interna nomeada `c216_network`:
+O Compose publica as portas 8000 (API) e 5173 (frontend) apenas no loopback.
+O arquivo `compose.local.yaml` também publica o PostgreSQL para uso local.
+Os serviços se comunicam numa rede interna do projeto:
 
 - O backend acessa o PostgreSQL pelo endereço `db:5432`, configurado em `DATABASE_URL`.
 - O worker consulta periodicamente o endpoint `http://backend:8000/health`.
-- O Compose só inicia o backend depois que o banco está saudável e só inicia o worker depois que a API está saudável.
+- O Compose inicia o backend quando o banco está saudável, e o frontend e o worker quando a API está saudável.
 
 ## Comandos úteis
 

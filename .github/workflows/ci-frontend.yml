@@ -60,7 +60,8 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Run E2E tests
-        run: npm run test:e2e
+        working-directory: .
+        run: make e2e
 
       - name: Upload Playwright report
         if: failure()

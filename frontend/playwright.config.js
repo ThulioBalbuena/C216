@@ -1,7 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const PORT = 5173;
-const BASE_URL = `http://localhost:${PORT}`;
+const BASE_URL = process.env.E2E_BASE_URL || "http://localhost:5173";
 
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -14,9 +13,4 @@ export default defineConfig({
     trace: "on-first-retry",
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
-  webServer: {
-    command: `npm run dev -- --port ${PORT} --strictPort`,
-    url: BASE_URL,
-    reuseExistingServer: !process.env.CI,
-  },
 });

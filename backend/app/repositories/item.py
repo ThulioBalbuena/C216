@@ -1,7 +1,12 @@
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.models.item import Item
+
+
+class ItemNameConflictError(Exception):
+    """Já existe um item com esse nome."""
 
 
 class ItemRepository:
@@ -10,12 +15,24 @@ class ItemRepository:
     def __init__(self, db: Session) -> None:
         self.db = db
 
+    def _commit_item(self, item: Item) -> Item:
+        try:
+            self.db.commit()
+        except IntegrityError as exc:
+            self.db.rollback()
+            constraint = getattr(getattr(exc.orig, "diag", None), "constraint_name", None)
+            if constraint == "uq_items_name" or str(exc.orig) == (
+                "UNIQUE constraint failed: items.name"
+            ):
+                raise ItemNameConflictError from exc
+            raise
+        self.db.refresh(item)
+        return item
+
     def create(self, name: str, price: float, description: str | None = None) -> Item:
         item = Item(name=name, price=price, description=description)
         self.db.add(item)
-        self.db.commit()
-        self.db.refresh(item)
-        return item
+        return self._commit_item(item)
 
     def get_by_id(self, item_id: int) -> Item | None:
         return self.db.get(Item, item_id)
@@ -32,9 +49,7 @@ class ItemRepository:
     def update(self, item: Item, changes: dict) -> Item:
         for field, value in changes.items():
             setattr(item, field, value)
-        self.db.commit()
-        self.db.refresh(item)
-        return item
+        return self._commit_item(item)
 
     def delete(self, item: Item) -> None:
         self.db.delete(item)

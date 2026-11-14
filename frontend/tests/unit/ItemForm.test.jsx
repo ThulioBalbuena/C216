@@ -9,6 +9,7 @@ describe("ItemForm", () => {
     const onAdd = vi.fn();
     render(<ItemForm onAdd={onAdd} />);
 
+    await user.type(screen.getByLabelText(/preço/i), "10");
     await user.type(screen.getByLabelText(/nome/i), "  Caderno  ");
     await user.type(screen.getByLabelText(/descrição/i), "  Capa azul  ");
     await user.click(screen.getByRole("button", { name: "Adicionar item" }));
@@ -16,6 +17,7 @@ describe("ItemForm", () => {
     expect(onAdd).toHaveBeenCalledTimes(1);
     expect(onAdd).toHaveBeenCalledWith({
       name: "Caderno",
+      price: 10,
       description: "Capa azul",
     });
     expect(screen.getByLabelText(/nome/i)).toHaveValue("");
@@ -27,10 +29,15 @@ describe("ItemForm", () => {
     const onAdd = vi.fn();
     render(<ItemForm onAdd={onAdd} />);
 
+    await user.type(screen.getByLabelText(/preço/i), "10");
     await user.type(screen.getByLabelText(/nome/i), "Caderno");
     await user.click(screen.getByRole("button", { name: "Adicionar item" }));
 
-    expect(onAdd).toHaveBeenCalledWith({ name: "Caderno", description: "" });
+    expect(onAdd).toHaveBeenCalledWith({
+      name: "Caderno",
+      price: 10,
+      description: "",
+    });
   });
 
   it("não envia e mostra erro quando o nome está vazio", async () => {
@@ -38,6 +45,7 @@ describe("ItemForm", () => {
     const onAdd = vi.fn();
     render(<ItemForm onAdd={onAdd} />);
 
+    await user.type(screen.getByLabelText(/preço/i), "10");
     await user.click(screen.getByRole("button", { name: "Adicionar item" }));
 
     expect(onAdd).not.toHaveBeenCalled();
@@ -54,6 +62,7 @@ describe("ItemForm", () => {
     const user = userEvent.setup();
     render(<ItemForm onAdd={vi.fn()} />);
 
+    await user.type(screen.getByLabelText(/preço/i), "10");
     await user.click(screen.getByRole("button", { name: "Adicionar item" }));
     expect(screen.getByRole("alert")).toBeInTheDocument();
 
@@ -71,6 +80,7 @@ describe("ItemForm", () => {
     const onAdd = vi.fn();
     render(<ItemForm onAdd={onAdd} />);
 
+    await user.type(screen.getByLabelText(/preço/i), "10");
     await user.type(screen.getByLabelText(/nome/i), "Caderno");
     await user.click(screen.getByLabelText(/descrição/i));
     await user.paste("a".repeat(1001));

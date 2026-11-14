@@ -53,18 +53,21 @@ describe("validateDescription", () => {
 
 describe("validateItem", () => {
   it("retorna objeto vazio quando o item é válido", () => {
-    expect(validateItem({ name: "Caderno", description: "Capa azul" })).toEqual(
-      {},
-    );
+    expect(
+      validateItem({ name: "Caderno", price: "10", description: "Capa azul" }),
+    ).toEqual({});
   });
 
   it("retorna erro apenas do campo inválido", () => {
-    expect(validateItem({ name: "", description: "Capa azul" })).toEqual({
+    expect(
+      validateItem({ name: "", price: "10", description: "Capa azul" }),
+    ).toEqual({
       name: "O nome é obrigatório.",
     });
     expect(
       validateItem({
         name: "Caderno",
+        price: "10",
         description: "a".repeat(DESCRIPTION_MAX_LENGTH + 1),
       }),
     ).toEqual({
@@ -75,6 +78,7 @@ describe("validateItem", () => {
   it("retorna os erros dos dois campos quando ambos são inválidos", () => {
     const errors = validateItem({
       name: " ",
+      price: "10",
       description: "a".repeat(DESCRIPTION_MAX_LENGTH + 1),
     });
     expect(Object.keys(errors)).toEqual(["name", "description"]);
