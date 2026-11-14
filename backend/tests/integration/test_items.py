@@ -135,3 +135,14 @@ def test_items_persist_across_app_instances(
     with TestClient(restarted_app) as other_client:
         assert other_client.get(f"/items/{item['id']}").json() == item
         assert other_client.get("/items").json() == [item]
+
+
+def test_duplicate_item_name_returns_conflict(client: TestClient) -> None:
+    data = {"name": "Caderno", "price": 10}
+    assert client.post("/items", json=data).status_code == 201
+
+    response = client.post("/items", json=data)
+
+    assert response.status_code == 409
+    assert response.json() == {"detail": "Já existe um item com esse nome"}
+    assert len(client.get("/items").json()) == 1

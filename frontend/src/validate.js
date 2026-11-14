@@ -20,7 +20,7 @@ export function validateDescription(description) {
   return "";
 }
 
-export function validateItem({ name, description }) {
+export function validateItem({ name, price, description }) {
   const errors = {};
   const nameError = validateName(name);
   const descriptionError = validateDescription(description);
@@ -29,6 +29,9 @@ export function validateItem({ name, description }) {
   }
   if (descriptionError) {
     errors.description = descriptionError;
+  }
+  if (price === "" || !Number.isFinite(Number(price)) || Number(price) < 0) {
+    errors.price = "Informe um preço válido, maior ou igual a zero.";
   }
   return errors;
 }

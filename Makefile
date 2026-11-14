@@ -6,6 +6,7 @@ RUFF := poetry -C backend run ruff
 ALEMBIC := poetry -C backend run alembic
 COMPOSE := docker compose
 FRONT := npm --prefix frontend
+.PHONY: up-build frontend-test frontend-check frontend-build e2e
 
 install:
 	poetry -C backend install --no-root
@@ -18,17 +19,18 @@ format:
 run:
 	$(UVICORN) app.main:app --reload
 db-upgrade:
-	$(ALEMBIC) upgrade head
+	$(COMPOSE) exec -T backend alembic upgrade head
 db-migration:
 	$(ALEMBIC) revision --autogenerate -m "$(msg)"
 db-current:
-	$(ALEMBIC) current
+	$(COMPOSE) exec -T backend alembic current
 docker-build:
 	$(COMPOSE) build backend
 docker-test:
 	$(COMPOSE) --profile test run --build --rm tests
-up:
-	$(COMPOSE) up -d --build
+up: up-build
+up-build:
+	$(COMPOSE) up -d --build --wait
 down:
 	$(COMPOSE) down
 restart:
@@ -59,17 +61,26 @@ front-check:
 	$(FRONT) run check
 front-test:
 	$(FRONT) run test
-front-test-e2e:
+frontend-test: front-test
+frontend-check: front-check
+frontend-build: front-build
+front-test-e2e: e2e
+e2e:
+	@set -eu; \
+	export API_PORT=18000 FRONTEND_PORT=15173; \
+	export VITE_API_URL=http://127.0.0.1:18000; \
+	export CORS_ORIGINS=http://127.0.0.1:15173 E2E_BASE_URL=http://127.0.0.1:15173; \
+	project=lab-e2e-$$$$; \
+	trap '$(COMPOSE) -p "$$project" down --volumes --remove-orphans' EXIT; \
+	trap 'exit 130' INT; trap 'exit 143' TERM; \
+	$(COMPOSE) -p "$$project" up -d --build --wait --wait-timeout 90 frontend; \
 	$(FRONT) run test:e2e
 check-all:
 	$(MAKE) lint
 	$(MAKE) test
 	$(MAKE) front-install
-	$(MAKE) front-lint
-	$(MAKE) front-format-check
-	$(MAKE) front-test
-	$(MAKE) front-build
-	$(MAKE) front-test-e2e
+	$(MAKE) frontend-check frontend-test frontend-build
+	$(MAKE) e2e
 help:
 	echo "Usage: make <target>"
 	echo "Targets:"
@@ -84,6 +95,7 @@ help:
 	echo "  docker-build - constroi a imagem do backend"
 	echo "  docker-test - executa testes unitarios e de integracao em container"
 	echo "  up - constroi e inicia os servicos em segundo plano"
+	echo "  up-build - constroi e aguarda os servicos do Compose"
 	echo "  down - para e remove os containers"
 	echo "  restart - reinicia os servicos"
 	echo "  logs - acompanha os logs do backend"
@@ -100,4 +112,5 @@ help:
 	echo "  front-check - lint, formatacao e imports do frontend"
 	echo "  front-test - executa testes unitarios e de integracao do frontend"
 	echo "  front-test-e2e - executa os testes E2E do frontend (Playwright)"
+	echo "  e2e - testa a integracao com a API e o banco em Compose isolado"
 	echo "  check-all - executa o checklist de entrega (backend e frontend)"

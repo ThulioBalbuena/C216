@@ -1,9 +1,11 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "../../src/App.jsx";
 
 async function addItem(user, name, description = "") {
+  await user.clear(screen.getByLabelText(/preço/i));
+  await user.type(screen.getByLabelText(/preço/i), "10");
   const nameField = screen.getByLabelText(/nome/i);
   const descriptionField = screen.getByLabelText(/descrição/i);
   if (name) {
@@ -16,18 +18,31 @@ async function addItem(user, name, description = "") {
 }
 
 describe("App (formulário + lista)", () => {
+  let fetchMock;
+  beforeEach(() => {
+    let nextId = 1;
+    fetchMock = vi.fn(async (_url, options) => {
+      if (options.method === "POST") {
+        return Response.json({ id: nextId++, ...JSON.parse(options.body) });
+      }
+      return Response.json([]);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+  });
+
   afterEach(() => {
     vi.unstubAllGlobals();
   });
 
-  it("começa com a lista vazia", () => {
+  it("mostra carregamento e depois a lista vazia", async () => {
     render(<App />);
 
     expect(
       screen.getByRole("heading", { name: "Gerenciador de itens" }),
     ).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("Carregando itens");
     expect(
-      screen.getByRole("heading", { name: "Itens cadastrados (0)" }),
+      await screen.findByRole("heading", { name: "Itens cadastrados (0)" }),
     ).toBeInTheDocument();
     expect(screen.getByText(/nenhum item cadastrado/i)).toBeInTheDocument();
   });
@@ -38,7 +53,7 @@ describe("App (formulário + lista)", () => {
 
     await addItem(user, "Caderno", "Capa azul");
 
-    const list = screen.getByRole("list");
+    const list = await screen.findByRole("list");
     expect(within(list).getByText("Caderno")).toBeInTheDocument();
     expect(within(list).getByText("Capa azul")).toBeInTheDocument();
     expect(
@@ -101,18 +116,35 @@ describe("App (formulário + lista)", () => {
     await user.click(screen.getByRole("button", { name: "Adicionar item" }));
 
     expect(
-      within(screen.getByRole("list")).getByText("Caderno"),
+      within(await screen.findByRole("list")).getByText("Caderno"),
     ).toBeInTheDocument();
   });
 
-  it("não faz nenhuma chamada de rede ao cadastrar", async () => {
-    const fetchMock = vi.fn();
-    vi.stubGlobal("fetch", fetchMock);
+  it("mostra o erro da API e mantém os campos se o nome já existe", async () => {
     const user = userEvent.setup();
     render(<App />);
+    await screen.findByText(/nenhum item cadastrado/i);
+    fetchMock.mockResolvedValueOnce(
+      Response.json(
+        { detail: "Já existe um item com esse nome" },
+        { status: 409 },
+      ),
+    );
 
     await addItem(user, "Caderno", "Capa azul");
 
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Já existe um item com esse nome",
+    );
+    expect(screen.getByLabelText(/nome/i)).toHaveValue("Caderno");
+    expect(screen.getByLabelText(/descrição/i)).toHaveValue("Capa azul");
+  });
+
+  it("mostra mensagem quando não consegue conectar à API", async () => {
+    fetchMock.mockRejectedValueOnce(new TypeError("offline"));
+    render(<App />);
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Não foi possível conectar à API.",
+    );
   });
 });
