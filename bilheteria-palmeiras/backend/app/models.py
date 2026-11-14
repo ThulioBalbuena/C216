@@ -1,6 +1,7 @@
 from datetime import datetime
+from uuid import UUID, uuid4
 
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, String
+from sqlalchemy import CheckConstraint, DateTime, ForeignKey, String, Uuid, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .database import Base
@@ -32,3 +33,15 @@ class Sector(Base):
     price_cents: Mapped[int]
     remaining: Mapped[int]
     match: Mapped[Match] = relationship(back_populates="sectors")
+
+
+class Simulation(Base):
+    __tablename__ = "simulations"
+    __table_args__ = (CheckConstraint("quantity BETWEEN 1 AND 4"),)
+
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
+    browser_id: Mapped[UUID] = mapped_column(Uuid, index=True)
+    sector_id: Mapped[int] = mapped_column(ForeignKey("sectors.id"))
+    quantity: Mapped[int]
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    sector: Mapped[Sector] = relationship()

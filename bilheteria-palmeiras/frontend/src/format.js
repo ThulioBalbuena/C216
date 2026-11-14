@@ -24,3 +24,5 @@ export const matchDate = (value) =>
 export const matchTime = (value) => time.format(new Date(value));
 export const matchDay = (value) => day.format(new Date(value));
 export const money = (cents) => currency.format(cents / 100);
+export const tickets = (quantity) =>
+  `${quantity} ${quantity === 1 ? "ingresso" : "ingressos"}`;

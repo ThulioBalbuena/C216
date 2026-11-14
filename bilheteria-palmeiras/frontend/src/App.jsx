@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "./api";
-import { matchDate, matchDay, matchTime } from "./format";
+import { matchDate, matchDay, matchTime, money, tickets } from "./format";
 import { SectorSelection } from "./SectorSelection";
 
 const crests = {
@@ -9,6 +9,8 @@ const crests = {
   BAH: "/media/bahia.png",
   GRE: "/media/gremio.png",
 };
+const historyUrl = "#/ingressos";
+const reviewUrl = (id) => `${historyUrl}/${id}`;
 
 function Crest({ initials = "PAL" }) {
   const source = crests[initials];
@@ -45,6 +47,7 @@ function useCatalog(path) {
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: Retrying fetches the same path again.
   useEffect(() => {
+    if (!path) return;
     const controller = new AbortController();
     api(path, { signal: controller.signal }).then(
       (data) => {
@@ -167,14 +170,32 @@ function Home() {
   );
 }
 
-function MatchPage({ id }) {
+function MatchPage({ id, draftId }) {
   const { data: match, error, retry } = useCatalog(`/matches/${id}`);
+  const draftRequest = useCatalog(draftId ? `/simulations/${draftId}` : null);
   if (!match) return <Pending error={error} retry={retry} />;
+  const draft = draftRequest.data;
+  if (draftId && !draft)
+    return <Pending error={draftRequest.error} retry={draftRequest.retry} />;
+  if (draft && draft.match.id !== match.id) {
+    return <p className="panel empty">Este pedido pertence a outra partida.</p>;
+  }
+
+  async function save(body) {
+    const order = await api(
+      draftId ? `/simulations/${draftId}` : "/simulations",
+      {
+        method: draftId ? "PUT" : "POST",
+        body,
+      },
+    );
+    window.location.hash = reviewUrl(order.id);
+  }
 
   return (
     <>
-      <a className="back" href="#/">
-        ← Voltar aos jogos
+      <a className="back" href={draftId ? reviewUrl(draftId) : "#/"}>
+        ← {draftId ? "Voltar à revisão" : "Voltar aos jogos"}
       </a>
       <div className="match-banner">
         <div>
@@ -191,7 +212,153 @@ function MatchPage({ id }) {
           <Crest initials={match.opponent_initials} />
         </div>
       </div>
-      <SectorSelection sectors={match.sectors} />
+      <SectorSelection sectors={match.sectors} draft={draft} onSave={save} />
+    </>
+  );
+}
+
+function Review({ id }) {
+  const { data: order, error, retry } = useCatalog(`/simulations/${id}`);
+  const [askDelete, setAskDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [failure, setFailure] = useState("");
+
+  async function remove() {
+    setDeleting(true);
+    setFailure("");
+    try {
+      await api(`/simulations/${id}`, { method: "DELETE" });
+      window.location.hash = historyUrl;
+    } catch (problem) {
+      setFailure(problem.message);
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  if (!order) return <Pending error={error} retry={retry} />;
+  return (
+    <div className="review-layout">
+      <a className="back" href={historyUrl}>
+        ← Meus ingressos
+      </a>
+      <h1 className="page-title">Revise seu pedido</h1>
+      <p className="page-lead">Confira a partida, o setor e a quantidade.</p>
+      <section className="panel review">
+        <div className="ticket-summary">
+          <div className="ticket-match">
+            <Crest />
+            <div>
+              <h2>Palmeiras × {order.match.opponent}</h2>
+              <p className="match-facts">
+                {matchDay(order.match.starts_at)} ·{" "}
+                {matchTime(order.match.starts_at)} · {order.match.venue}
+              </p>
+            </div>
+          </div>
+          <dl>
+            <div>
+              <dt>Setor</dt>
+              <dd>{order.sector.name}</dd>
+            </div>
+            <div>
+              <dt>Quantidade</dt>
+              <dd>{tickets(order.quantity)}</dd>
+            </div>
+            <div>
+              <dt>Valor unitário</dt>
+              <dd>{money(order.unit_price_cents)}</dd>
+            </div>
+          </dl>
+          <div className="total">
+            <span>Total</span>
+            <strong>{money(order.total_cents)}</strong>
+          </div>
+        </div>
+        {failure && (
+          <p className="error" role="alert">
+            {failure}
+          </p>
+        )}
+        <div className="review-actions">
+          <a href={`#/jogos/${order.match.id}/editar/${id}`}>Editar pedido</a>
+          <button
+            type="button"
+            disabled={deleting}
+            onClick={() => setAskDelete(true)}
+          >
+            Excluir rascunho
+          </button>
+        </div>
+        {askDelete && (
+          <div className="delete-confirm">
+            <p>Excluir este rascunho?</p>
+            <button
+              className="button light"
+              disabled={deleting}
+              type="button"
+              onClick={() => setAskDelete(false)}
+            >
+              Voltar
+            </button>
+            <button
+              className="button danger"
+              disabled={deleting}
+              type="button"
+              onClick={remove}
+            >
+              {deleting ? "Excluindo…" : "Sim, excluir"}
+            </button>
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
+function History() {
+  const { data: orders, error, retry } = useCatalog("/simulations");
+
+  return (
+    <>
+      <a className="back" href="#/">
+        ← Voltar aos jogos
+      </a>
+      <div className="match-banner history-banner">
+        <div>
+          <span className="eyebrow">Bilheteria</span>
+          <h1 className="page-title">Meus ingressos</h1>
+          <p>Consulte seus pedidos ou continue de onde parou.</p>
+        </div>
+      </div>
+      {!orders ? (
+        <Pending error={error} retry={retry} />
+      ) : orders.length ? (
+        <div className="history">
+          {orders.map((order) => (
+            <article key={order.id} className="panel history-item">
+              <div>
+                <span className="pill">Rascunho</span>
+                <h2>Palmeiras × {order.match.opponent}</h2>
+                <p>
+                  {order.sector.name} · {tickets(order.quantity)} ·{" "}
+                  {money(order.total_cents)}
+                </p>
+              </div>
+              <a className="button light" href={reviewUrl(order.id)}>
+                Revisar rascunho →
+              </a>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <div className="panel empty">
+          <p>Você ainda não tem ingressos neste navegador.</p>
+          <a className="button primary" href="#/">
+            Escolher um jogo →
+          </a>
+        </div>
+      )}
     </>
   );
 }
@@ -200,9 +367,18 @@ function currentRoute() {
   return window.location.hash.slice(1) || "/";
 }
 
+function renderRoute(route) {
+  const match = route.match(/^\/jogos\/(\d+)(?:\/editar\/([a-f0-9-]+))?$/i);
+  const review = route.match(/^\/ingressos\/([a-f0-9-]+)$/i);
+  if (route === "/") return <Home />;
+  if (match) return <MatchPage id={match[1]} draftId={match[2]} />;
+  if (review) return <Review id={review[1]} />;
+  if (route === "/ingressos") return <History />;
+  return <p className="panel empty">Página não encontrada.</p>;
+}
+
 export default function App() {
   const [route, setRoute] = useState(currentRoute);
-  const match = route.match(/^\/jogos\/(\d+)$/);
 
   useEffect(() => {
     function onRoute() {
@@ -230,17 +406,19 @@ export default function App() {
             ) : (
               <a href="#/">Jogos</a>
             )}
+            <a
+              className="nav-tickets"
+              href={historyUrl}
+              aria-current={route.startsWith("/ingressos") ? "page" : undefined}
+            >
+              <span className="ticket-icon" aria-hidden="true" />
+              Meus ingressos
+            </a>
           </nav>
         </div>
       </header>
       <main className={route === "/" ? "home" : "shell frame"} key={route}>
-        {route === "/" ? (
-          <Home />
-        ) : match ? (
-          <MatchPage id={match[1]} />
-        ) : (
-          <p className="panel empty">Página não encontrada.</p>
-        )}
+        {renderRoute(route)}
       </main>
       <footer className="site-footer">
         <div className="footer-inner frame">

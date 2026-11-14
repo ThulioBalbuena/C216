@@ -122,14 +122,30 @@ function Stadium({ sectors, selected, onSelect }) {
   );
 }
 
-export function SectorSelection({ sectors }) {
-  const [selected, setSelected] = useState(null);
-  const [quantity, setQuantity] = useState(1);
+export function SectorSelection({ sectors, draft, onSave }) {
+  const [selected, setSelected] = useState(draft?.sector.id ?? null);
+  const [quantity, setQuantity] = useState(draft?.quantity ?? 1);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
   const sector = sectors.find((item) => item.id === selected);
 
   function select(item) {
     setSelected(item.id);
     setQuantity((current) => Math.min(current, item.remaining));
+  }
+
+  async function submit(event) {
+    event.preventDefault();
+    if (saving || !sector || quantity > sector.remaining) return;
+    setSaving(true);
+    setError("");
+    try {
+      await onSave({ sector_id: selected, quantity });
+    } catch (failure) {
+      setError(failure.message);
+    } finally {
+      setSaving(false);
+    }
   }
 
   if (!sectors.length)
@@ -138,7 +154,11 @@ export function SectorSelection({ sectors }) {
   return (
     <div className="selection-layout">
       <Stadium sectors={sectors} selected={selected} onSelect={select} />
-      <section className="panel picker" aria-labelledby="picker-title">
+      <form
+        className="panel picker"
+        aria-labelledby="picker-title"
+        onSubmit={submit}
+      >
         <h2 id="picker-title">Escolha seu setor</h2>
         <SectorPicker
           sectors={sectors}
@@ -151,7 +171,24 @@ export function SectorSelection({ sectors }) {
           <span>Total</span>
           <strong>{sector ? money(sector.price_cents * quantity) : "—"}</strong>
         </div>
-      </section>
+        {error && (
+          <p className="error" role="alert">
+            {error}
+          </p>
+        )}
+        <button
+          className="button primary wide"
+          type="submit"
+          disabled={saving || !sector || quantity > sector.remaining}
+        >
+          {saving
+            ? "Salvando…"
+            : draft
+              ? "Salvar alterações"
+              : "Revisar pedido"}
+          <span aria-hidden="true">→</span>
+        </button>
+      </form>
     </div>
   );
 }
