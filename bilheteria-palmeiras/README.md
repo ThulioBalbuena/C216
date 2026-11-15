@@ -44,7 +44,7 @@ make install-frontend
 make lint
 make test-frontend
 make test-backend
-(cd frontend && npx playwright install chromium)
+make install-browser
 make test-e2e
 ```
 

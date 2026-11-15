@@ -1,4 +1,4 @@
-.PHONY: up down logs migrate install-frontend lint test-frontend test-backend test-e2e
+.PHONY: up down logs migrate install-frontend install-browser lint test-frontend test-backend test-e2e
 
 up:
 	docker compose up -d --build --wait
@@ -14,6 +14,9 @@ migrate:
 
 install-frontend:
 	npm --prefix frontend ci
+
+install-browser:
+	cd frontend && npx playwright install $(PLAYWRIGHT_INSTALL_FLAGS) chromium
 
 lint:
 	docker compose exec -T backend ruff check .
