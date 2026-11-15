@@ -3,7 +3,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
-from .models import Match, Sector, Simulation
+from .models import Match, Sector, Simulation, YouTubeVideo
 
 
 def list_matches(db: Session):
@@ -12,6 +12,12 @@ def list_matches(db: Session):
 
 def get_match(db: Session, match_id: int):
     return db.get(Match, match_id, options=[selectinload(Match.sectors)])
+
+
+def latest_videos(db: Session):
+    return db.scalars(
+        select(YouTubeVideo).order_by(YouTubeVideo.published_at.desc(), YouTubeVideo.id).limit(3)
+    ).all()
 
 
 def list_simulations(db: Session, browser_id: UUID):

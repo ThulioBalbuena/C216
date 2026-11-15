@@ -47,3 +47,12 @@ class Simulation(Base):
     confirmed_price_cents: Mapped[int | None]
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     sector: Mapped[Sector] = relationship()
+
+
+class YouTubeVideo(Base):
+    __tablename__ = "youtube_videos"
+
+    id: Mapped[str] = mapped_column(String(11), primary_key=True)
+    title: Mapped[str] = mapped_column(String(250))
+    published_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))

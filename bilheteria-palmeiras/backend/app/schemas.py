@@ -43,3 +43,11 @@ class SimulationOut(BaseModel):
     total_cents: int
     confirmed_at: datetime | None
     code: str | None
+
+
+class YouTubeVideoOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    title: str
+    published_at: datetime

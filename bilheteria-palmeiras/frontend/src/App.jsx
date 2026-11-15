@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "./api";
 import { ClubStories } from "./ClubStories";
 import { matchDate, matchDay, matchTime, money, tickets } from "./format";
+import { PalmeirasTv } from "./PalmeirasTv";
 import { SectorSelection } from "./SectorSelection";
 
 const crests = {
@@ -42,7 +43,7 @@ function showFixtures() {
   fixtures.scrollIntoView();
 }
 
-function useCatalog(path) {
+function useCatalog(path, refreshMs) {
   const [attempt, setAttempt] = useState(0);
   const [state, setState] = useState({ data: null, error: "" });
 
@@ -50,17 +51,27 @@ function useCatalog(path) {
   useEffect(() => {
     if (!path) return;
     const controller = new AbortController();
-    api(path, { signal: controller.signal }).then(
-      (data) => {
+    let timer;
+
+    async function load() {
+      try {
+        const data = await api(path, { signal: controller.signal });
         if (!controller.signal.aborted) setState({ data, error: "" });
-      },
-      (error) => {
+      } catch (error) {
         if (!controller.signal.aborted)
-          setState({ data: null, error: error.message });
-      },
-    );
-    return () => controller.abort();
-  }, [path, attempt]);
+          setState(({ data }) => ({ data, error: error.message }));
+      } finally {
+        if (refreshMs && !controller.signal.aborted)
+          timer = window.setTimeout(load, refreshMs);
+      }
+    }
+
+    load();
+    return () => {
+      controller.abort();
+      window.clearTimeout(timer);
+    };
+  }, [path, attempt, refreshMs]);
 
   function retry() {
     setState({ data: null, error: "" });
@@ -119,6 +130,7 @@ function Fixture({ match }) {
 
 function Home() {
   const { data: matches, error, retry } = useCatalog("/matches");
+  const { data: videos, error: videoError } = useCatalog("/videos", 30_000);
 
   return (
     <>
@@ -168,6 +180,7 @@ function Home() {
         )}
       </section>
       <ClubStories />
+      <PalmeirasTv data={videos} error={videoError} />
     </>
   );
 }

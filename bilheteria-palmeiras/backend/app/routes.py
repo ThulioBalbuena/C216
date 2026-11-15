@@ -6,11 +6,16 @@ from sqlalchemy.orm import Session
 
 from . import repositories, services
 from .database import get_db
-from .schemas import MatchDetail, MatchOut, SimulationInput, SimulationOut
+from .schemas import MatchDetail, MatchOut, SimulationInput, SimulationOut, YouTubeVideoOut
 
 router = APIRouter(prefix="/api")
 Db = Annotated[Session, Depends(get_db)]
 Browser = Annotated[UUID, Header(alias="X-Browser-ID")]
+
+
+@router.get("/videos", response_model=list[YouTubeVideoOut])
+def list_videos(db: Db):
+    return repositories.latest_videos(db)
 
 
 @router.get("/matches", response_model=list[MatchOut])

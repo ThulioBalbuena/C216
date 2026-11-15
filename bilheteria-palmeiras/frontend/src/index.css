@@ -1305,11 +1305,6 @@ nav a:focus-visible,
   line-height: 1.55;
 }
 
-.story-track a:hover h3 {
-  text-decoration: underline;
-  text-underline-offset: 0.17em;
-}
-
 @media (max-width: 730px) {
   .club-stories {
     padding-bottom: 42px;
@@ -1328,5 +1323,100 @@ nav a:focus-visible,
 @media (prefers-reduced-motion: reduce) {
   .story-track {
     scroll-behavior: auto;
+  }
+}
+
+.palmeiras-tv {
+  padding-block: 42px 56px;
+  color: var(--cream);
+  background: var(--dark);
+}
+
+.palmeiras-tv :focus-visible {
+  outline-color: var(--gold);
+}
+
+.tv-channel {
+  padding-block: 8px;
+  color: var(--gold);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.tv-grid {
+  display: grid;
+  gap: 18px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.tv-thumbnail {
+  position: relative;
+  background: var(--green);
+}
+
+.tv-play {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 36px;
+  border-radius: 4px;
+  background: var(--dark);
+  color: white;
+  font-size: 14px;
+}
+
+.tv-grid time {
+  display: block;
+  margin: 12px 0 5px;
+  color: #c6d7cc;
+  font-size: 12px;
+  text-transform: capitalize;
+}
+
+.tv-grid h3 {
+  font: 400 clamp(19px, 2vw, 24px) / 1.2 var(--display);
+  overflow-wrap: anywhere;
+}
+
+.tv-status {
+  color: #d6e1d7;
+  font-size: 14px;
+}
+
+.tv-grid a {
+  display: block;
+}
+
+.tv-thumbnail img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}
+
+.story-track a:hover h3,
+.tv-grid a:hover h3,
+.tv-channel:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.17em;
+}
+
+@media (max-width: 730px) {
+  .tv-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    row-gap: 24px;
+  }
+}
+
+@media (max-width: 470px) {
+  .tv-grid {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
