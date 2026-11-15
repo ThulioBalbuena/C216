@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "./api";
+import { ClubStories } from "./ClubStories";
 import { matchDate, matchDay, matchTime, money, tickets } from "./format";
 import { SectorSelection } from "./SectorSelection";
 
@@ -166,6 +167,7 @@ function Home() {
           <p className="panel empty">Nenhuma partida disponível.</p>
         )}
       </section>
+      <ClubStories />
     </>
   );
 }

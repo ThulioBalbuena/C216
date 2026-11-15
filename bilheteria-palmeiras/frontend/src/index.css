@@ -1201,3 +1201,132 @@ nav a:focus-visible,
     display: none;
   }
 }
+
+.club-stories {
+  padding-block: 8px 64px;
+}
+
+.media-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px 22px;
+}
+
+.media-heading h2 {
+  margin: 0;
+}
+
+.story-controls {
+  display: flex;
+  gap: 6px;
+}
+
+.story-arrow {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: var(--green);
+  color: #fff;
+  font-size: 20px;
+}
+
+.story-arrow:hover:not([aria-disabled="true"]) {
+  background: var(--green-bright);
+}
+
+.story-arrow[aria-disabled="true"] {
+  background: var(--pale);
+  color: var(--muted);
+  cursor: default;
+}
+
+.story-track {
+  display: grid;
+  gap: 18px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.story-track {
+  grid-auto-flow: column;
+  grid-auto-columns: calc((100% - 36px) / 3);
+  overflow-x: auto;
+  padding-block: 4px 14px;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: #a7b5a9 transparent;
+}
+
+.story-track li {
+  min-width: 0;
+  scroll-snap-align: start;
+}
+
+.story-track a {
+  display: block;
+}
+
+.story-track a:focus-visible {
+  outline-offset: -3px;
+}
+
+.story-track img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}
+
+.story-track .story-crest {
+  object-fit: contain;
+  padding: 8%;
+  background: #dce7dc;
+}
+
+.story-track h3 {
+  font: 400 clamp(21px, 2.4vw, 28px) / 1.2 var(--display);
+}
+
+.story-track h3 {
+  margin-top: 12px;
+}
+
+.story-track p {
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.story-track a:hover h3 {
+  text-decoration: underline;
+  text-underline-offset: 0.17em;
+}
+
+@media (max-width: 730px) {
+  .club-stories {
+    padding-bottom: 42px;
+  }
+  .story-track {
+    grid-auto-columns: calc((100% - 18px) / 2);
+  }
+}
+
+@media (max-width: 470px) {
+  .story-track {
+    grid-auto-columns: 84%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .story-track {
+    scroll-behavior: auto;
+  }
+}
