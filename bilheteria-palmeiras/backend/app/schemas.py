@@ -41,3 +41,5 @@ class SimulationOut(BaseModel):
     quantity: int
     unit_price_cents: int
     total_cents: int
+    confirmed_at: datetime | None
+    code: str | None

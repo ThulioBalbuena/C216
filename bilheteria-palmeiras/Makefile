@@ -1,4 +1,4 @@
-.PHONY: up down logs migrate install-frontend lint test-frontend
+.PHONY: up down logs migrate install-frontend lint test-frontend test-backend
 
 up:
 	docker compose up -d --build --wait
@@ -22,3 +22,6 @@ lint:
 
 test-frontend:
 	npm --prefix frontend test
+
+test-backend:
+	docker compose exec -T backend pytest

@@ -13,4 +13,5 @@ RUN poetry install --no-interaction --no-root
 COPY app ./app
 COPY alembic.ini ./
 COPY alembic ./alembic
+COPY tests ./tests
 CMD ["sh", "-c", "alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port 8000"]

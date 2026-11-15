@@ -177,6 +177,16 @@ function MatchPage({ id, draftId }) {
   const draft = draftRequest.data;
   if (draftId && !draft)
     return <Pending error={draftRequest.error} retry={draftRequest.retry} />;
+  if (draft?.confirmed_at) {
+    return (
+      <div className="panel empty">
+        <p>O pedido já foi confirmado.</p>
+        <a className="button light" href={reviewUrl(draft.id)}>
+          Ver confirmação
+        </a>
+      </div>
+    );
+  }
   if (draft && draft.match.id !== match.id) {
     return <p className="panel empty">Este pedido pertence a outra partida.</p>;
   }
@@ -218,10 +228,29 @@ function MatchPage({ id, draftId }) {
 }
 
 function Review({ id }) {
-  const { data: order, error, retry } = useCatalog(`/simulations/${id}`);
+  const { data, error, retry } = useCatalog(`/simulations/${id}`);
+  const [confirmedOrder, setConfirmedOrder] = useState(null);
+  const [confirming, setConfirming] = useState(false);
   const [askDelete, setAskDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [failure, setFailure] = useState("");
+  const order = confirmedOrder || data;
+  const busy = confirming || deleting;
+
+  async function confirm() {
+    setConfirming(true);
+    setFailure("");
+    try {
+      const result = await api(`/simulations/${id}/confirm`, {
+        method: "POST",
+      });
+      setConfirmedOrder(result);
+    } catch (problem) {
+      setFailure(problem.message);
+    } finally {
+      setConfirming(false);
+    }
+  }
 
   async function remove() {
     setDeleting(true);
@@ -242,8 +271,14 @@ function Review({ id }) {
       <a className="back" href={historyUrl}>
         ← Meus ingressos
       </a>
-      <h1 className="page-title">Revise seu pedido</h1>
-      <p className="page-lead">Confira a partida, o setor e a quantidade.</p>
+      <h1 className="page-title">
+        {order.confirmed_at ? "Pedido confirmado" : "Revise seu pedido"}
+      </h1>
+      <p className="page-lead">
+        {order.confirmed_at
+          ? "Guarde o código para consultar seu pedido."
+          : "Confira a partida, o setor e a quantidade antes de confirmar."}
+      </p>
       <section className="panel review">
         <div className="ticket-summary">
           <div className="ticket-match">
@@ -280,36 +315,61 @@ function Review({ id }) {
             {failure}
           </p>
         )}
-        <div className="review-actions">
-          <a href={`#/jogos/${order.match.id}/editar/${id}`}>Editar pedido</a>
-          <button
-            type="button"
-            disabled={deleting}
-            onClick={() => setAskDelete(true)}
-          >
-            Excluir rascunho
-          </button>
-        </div>
-        {askDelete && (
-          <div className="delete-confirm">
-            <p>Excluir este rascunho?</p>
+        {order.confirmed_at ? (
+          <>
+            <div className="receipt" role="status">
+              <span>Código do pedido</span>
+              <strong>{order.code}</strong>
+            </div>
+            <a className="button light wide" href={historyUrl}>
+              Ver meus ingressos <span aria-hidden="true">→</span>
+            </a>
+          </>
+        ) : (
+          <>
             <button
-              className="button light"
-              disabled={deleting}
+              className="button primary wide"
               type="button"
-              onClick={() => setAskDelete(false)}
+              disabled={busy || askDelete}
+              onClick={confirm}
             >
-              Voltar
+              {confirming ? "Confirmando…" : "Confirmar pedido"}
+              <span aria-hidden="true">→</span>
             </button>
-            <button
-              className="button danger"
-              disabled={deleting}
-              type="button"
-              onClick={remove}
-            >
-              {deleting ? "Excluindo…" : "Sim, excluir"}
-            </button>
-          </div>
+            <div className="review-actions">
+              <a href={`#/jogos/${order.match.id}/editar/${id}`}>
+                Editar pedido
+              </a>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => setAskDelete(true)}
+              >
+                Excluir rascunho
+              </button>
+            </div>
+            {askDelete && (
+              <div className="delete-confirm">
+                <p>Excluir este rascunho?</p>
+                <button
+                  className="button light"
+                  disabled={deleting}
+                  type="button"
+                  onClick={() => setAskDelete(false)}
+                >
+                  Voltar
+                </button>
+                <button
+                  className="button danger"
+                  disabled={deleting}
+                  type="button"
+                  onClick={remove}
+                >
+                  {deleting ? "Excluindo…" : "Sim, excluir"}
+                </button>
+              </div>
+            )}
+          </>
         )}
       </section>
     </div>
@@ -338,7 +398,9 @@ function History() {
           {orders.map((order) => (
             <article key={order.id} className="panel history-item">
               <div>
-                <span className="pill">Rascunho</span>
+                <span className={order.confirmed_at ? "pill done" : "pill"}>
+                  {order.confirmed_at ? "Confirmado" : "Rascunho"}
+                </span>
                 <h2>Palmeiras × {order.match.opponent}</h2>
                 <p>
                   {order.sector.name} · {tickets(order.quantity)} ·{" "}
@@ -346,7 +408,7 @@ function History() {
                 </p>
               </div>
               <a className="button light" href={reviewUrl(order.id)}>
-                Revisar rascunho →
+                {order.confirmed_at ? "Ver confirmação" : "Revisar rascunho"} →
               </a>
             </article>
           ))}

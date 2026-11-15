@@ -43,5 +43,7 @@ class Simulation(Base):
     browser_id: Mapped[UUID] = mapped_column(Uuid, index=True)
     sector_id: Mapped[int] = mapped_column(ForeignKey("sectors.id"))
     quantity: Mapped[int]
+    confirmed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    confirmed_price_cents: Mapped[int | None]
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     sector: Mapped[Sector] = relationship()

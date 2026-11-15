@@ -21,6 +21,7 @@ Na inicialização, a API aplica as migrações do Alembic. O catálogo inclui t
 make install-frontend
 make lint
 make test-frontend
+make test-backend
 ```
 
 `make up` aguarda as verificações de saúde do Docker Compose antes de retornar. A instalação local do frontend e a verificação com Biome usam Node.js 22. O Ruff roda dentro do contêiner da API.

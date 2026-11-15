@@ -1085,6 +1085,25 @@ nav a:focus-visible,
   text-align: right;
 }
 
+.pill.done {
+  background: #e6eee5;
+  color: var(--green);
+}
+
+.receipt {
+  display: grid;
+  gap: 5px;
+  padding: 14px;
+  margin-bottom: 14px;
+  border-radius: 4px;
+  text-align: center;
+  background: #f5edd7;
+}
+
+.receipt strong {
+  overflow-wrap: anywhere;
+}
+
 .review-actions {
   display: flex;
   flex-wrap: wrap;

@@ -22,7 +22,7 @@ jobs:
       - run: make install-frontend
       - run: make up
       - run: make lint
-      - run: make test-frontend
+      - run: make test-frontend test-backend
       - if: failure()
         run: docker compose logs --no-color
       - if: always()

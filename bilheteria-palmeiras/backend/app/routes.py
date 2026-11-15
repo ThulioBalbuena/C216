@@ -50,3 +50,8 @@ def update_simulation(draft_id: UUID, data: SimulationInput, db: Db, browser: Br
 def delete_simulation(draft_id: UUID, db: Db, browser: Browser):
     services.delete_draft(db, browser, draft_id)
     return Response(status_code=204)
+
+
+@router.post("/simulations/{draft_id}/confirm", response_model=SimulationOut)
+def confirm_simulation(draft_id: UUID, db: Db, browser: Browser):
+    return services.confirm_order(db, browser, draft_id)
