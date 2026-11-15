@@ -1,4 +1,4 @@
-.PHONY: up down logs migrate install-frontend lint test-frontend test-backend
+.PHONY: up down logs migrate install-frontend lint test-frontend test-backend test-e2e
 
 up:
 	docker compose up -d --build --wait
@@ -25,3 +25,7 @@ test-frontend:
 
 test-backend:
 	docker compose exec -T backend pytest
+
+test-e2e:
+	@address="$$(docker compose port frontend 80)" && \
+		BASE_URL="http://$$address" npm --prefix frontend run test:e2e

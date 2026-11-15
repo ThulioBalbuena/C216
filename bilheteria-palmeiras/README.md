@@ -22,8 +22,12 @@ make install-frontend
 make lint
 make test-frontend
 make test-backend
+(cd frontend && npx playwright install chromium)
+make test-e2e
 ```
 
 `make up` aguarda as verificações de saúde do Docker Compose antes de retornar. A instalação local do frontend e a verificação com Biome usam Node.js 22. O Ruff roda dentro do contêiner da API.
+
+`make test-e2e` usa a aplicação em execução e consome duas vagas de demonstração ao confirmar um pedido.
 
 Use `make migrate` para aplicar migrações pendentes com a API em execução, `make logs` para acompanhar os serviços e `make down` para encerrá-los. O volume do PostgreSQL é mantido.
